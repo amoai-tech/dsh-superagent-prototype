@@ -108,6 +108,19 @@ scripts/dsh-superagent status
 
 `stop` and `restart` request graceful shutdown and wait up to five minutes for Executors. They never force-kill the process or touch other tmux sessions.
 
+### When the MCP tool set changes
+
+Adding, removing, or updating an MCP server may change a Session's visible tool surface. An existing Session can show **Tools updated** while retaining runtime state from before the change. If native tools then fail, **do not remove the Superagent allowlist or patch DSH's scheduler blindly**. Let active Executors finish; use the existing profile controller for a clean restart, and verify native `bash` before a new MCP tool call:
+
+```sh
+scripts/dsh-superagent restart --profile superagent --url http://127.0.0.1:3082
+scripts/dsh-superagent status --profile superagent --url http://127.0.0.1:3082
+```
+
+Use the profile's actual port. Do not launch a second DSH process inside another Superagent Session. If `Cannot read properties of undefined (reading 'prepare')` persists after restarting, compare the loaded `@deepseek-ai/dsh-tools` module identity in the DSH agent loop with the profile's resolved module. Two physical module copies can have different scheduler `Symbol` identities; align compatible package resolution rather than disabling restrictions. A successful health check alone does not prove tool dispatch: execute a harmless native `bash` call in a fresh Session, then test the new MCP tool.
+
+
+
 `status` prints process ids, health and setup problems. For a different profile or port, use `--profile` and `--url`, or set `DSH_SUPERAGENT_PROFILE` and `DSH_SUPERAGENT_URL`.
 
 `status`, `start` and `restart` exit with one of four codes:
